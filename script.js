@@ -31,33 +31,22 @@ function loadImages() {
         const collageItem = document.createElement('div');
         collageItem.className = 'collage-item';
         
-        // Create regular img tag (base layer for Clarity)
-        const img = document.createElement('img');
-        img.src = imageName;
-        img.alt = createImageTitle(imageName);
-        img.className = 'collage-img';
-        img.loading = 'lazy';
-        
-        // Add error handling for images
-        img.onerror = function() {
-            console.error(`Failed to load image: ${imageName}`);
-            this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="20" dy=".3em"%3EImage not found%3C/text%3E%3C/svg%3E';
-        };
-        
-        // Create canvas element overlay
+        // Create canvas element
         const canvas = document.createElement('canvas');
         canvas.className = 'collage-canvas';
+        canvas.setAttribute('data-clarity-canvas', 'true'); // Mark for Clarity
         
         // Load image and draw on canvas
-        const tempImg = new Image();
-        tempImg.src = imageName;
+        const img = new Image();
+        img.crossOrigin = 'anonymous'; // Enable CORS for canvas export
+        img.src = imageName;
         
-        tempImg.onload = function() {
+        img.onload = function() {
             // Set canvas size to match image aspect ratio
             const maxWidth = 600;
             const maxHeight = 400;
-            let width = tempImg.width;
-            let height = tempImg.height;
+            let width = img.width;
+            let height = img.height;
             
             // Calculate aspect ratio
             const aspectRatio = width / height;
@@ -76,15 +65,38 @@ function loadImages() {
             canvas.height = height;
             
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(tempImg, 0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convert canvas to data URL and set as background for Clarity capture
+            try {
+                const dataURL = canvas.toDataURL('image/png');
+                canvas.style.backgroundImage = `url(${dataURL})`;
+                canvas.style.backgroundSize = 'cover';
+                canvas.setAttribute('data-image-src', imageName);
+            } catch (e) {
+                console.warn('Could not export canvas to data URL:', e);
+            }
+        };
+        
+        // Add error handling for images
+        img.onerror = function() {
+            console.error(`Failed to load image: ${imageName}`);
+            canvas.width = 400;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ddd';
+            ctx.fillRect(0, 0, 400, 300);
+            ctx.fillStyle = '#999';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Image not found', 200, 150);
         };
         
         const overlay = document.createElement('div');
         overlay.className = 'image-overlay';
         overlay.innerHTML = `<h3>${createImageTitle(imageName)}</h3>`;
         
-        collageItem.appendChild(img); // Base img for Clarity
-        collageItem.appendChild(canvas); // Canvas overlay
+        collageItem.appendChild(canvas);
         collageItem.appendChild(overlay);
         
         // Add click event to open lightbox
@@ -92,18 +104,60 @@ function loadImages() {
         
         collageGrid.appendChild(collageItem);
     });
+    
+    // Initialize Clarity canvas capture
+    initClarityCanvasCapture();
 }
 
 // Function to open lightbox
 function openLightbox(index) {
     currentImageIndex = index;
     const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxCanvas = document.getElementById('lightbox-canvas');
     const caption = document.getElementById('caption');
     
     lightbox.style.display = 'block';
-    lightboxImg.src = images[index];
     caption.textContent = createImageTitle(images[index]);
+    
+    // Load image and draw on lightbox canvas
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = images[index];
+    
+    img.onload = function() {
+        // Calculate dimensions to fit screen while maintaining aspect ratio
+        const maxWidth = window.innerWidth * 0.9;
+        const maxHeight = window.innerHeight * 0.8;
+        let width = img.width;
+        let height = img.height;
+        
+        const aspectRatio = width / height;
+        
+        if (width > maxWidth) {
+            width = maxWidth;
+            height = width / aspectRatio;
+        }
+        
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * aspectRatio;
+        }
+        
+        lightboxCanvas.width = width;
+        lightboxCanvas.height = height;
+        
+        const ctx = lightboxCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Set background for Clarity capture
+        try {
+            const dataURL = lightboxCanvas.toDataURL('image/png');
+            lightboxCanvas.style.backgroundImage = `url(${dataURL})`;
+            lightboxCanvas.style.backgroundSize = 'cover';
+        } catch (e) {
+            console.warn('Could not export lightbox canvas:', e);
+        }
+    };
     
     // Prevent body scroll when lightbox is open
     document.body.style.overflow = 'hidden';
@@ -130,16 +184,105 @@ function nextImage() {
 
 // Function to update lightbox image
 function updateLightboxImage() {
-    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxCanvas = document.getElementById('lightbox-canvas');
     const caption = document.getElementById('caption');
     
-    lightboxImg.style.opacity = '0';
+    lightboxCanvas.style.opacity = '0';
     
     setTimeout(() => {
-        lightboxImg.src = images[currentImageIndex];
         caption.textContent = createImageTitle(images[currentImageIndex]);
-        lightboxImg.style.opacity = '1';
+        
+        // Load new image and draw on canvas
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = images[currentImageIndex];
+        
+        img.onload = function() {
+            // Calculate dimensions to fit screen while maintaining aspect ratio
+            const maxWidth = window.innerWidth * 0.9;
+            const maxHeight = window.innerHeight * 0.8;
+            let width = img.width;
+            let height = img.height;
+            
+            const aspectRatio = width / height;
+            
+            if (width > maxWidth) {
+                width = maxWidth;
+                height = width / aspectRatio;
+            }
+            
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+            
+            lightboxCanvas.width = width;
+            lightboxCanvas.height = height;
+            
+            const ctx = lightboxCanvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Set background for Clarity capture
+            try {
+                const dataURL = lightboxCanvas.toDataURL('image/png');
+                lightboxCanvas.style.backgroundImage = `url(${dataURL})`;
+                lightboxCanvas.style.backgroundSize = 'cover';
+            } catch (e) {
+                console.warn('Could not export lightbox canvas:', e);
+            }
+            
+            lightboxCanvas.style.opacity = '1';
+        };
     }, 150);
+}
+
+// Function to make canvas content visible to Clarity
+function initClarityCanvasCapture() {
+    // Create a hidden container for Clarity-compatible snapshots
+    const clarityContainer = document.createElement('div');
+    clarityContainer.id = 'clarity-canvas-snapshots';
+    clarityContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; opacity: 0; pointer-events: none;';
+    clarityContainer.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(clarityContainer);
+    
+    // Periodically capture canvas content for Clarity
+    function captureCanvasSnapshots() {
+        const canvases = document.querySelectorAll('canvas[data-clarity-canvas]');
+        clarityContainer.innerHTML = ''; // Clear previous snapshots
+        
+        canvases.forEach((canvas, index) => {
+            try {
+                const dataURL = canvas.toDataURL('image/png');
+                const snapshotDiv = document.createElement('div');
+                snapshotDiv.className = 'canvas-snapshot';
+                snapshotDiv.setAttribute('data-canvas-index', index);
+                snapshotDiv.style.cssText = `
+                    width: ${canvas.width}px; 
+                    height: ${canvas.height}px; 
+                    background-image: url(${dataURL}); 
+                    background-size: cover;
+                `;
+                clarityContainer.appendChild(snapshotDiv);
+            } catch (e) {
+                console.warn('Canvas snapshot failed:', e);
+            }
+        });
+    }
+    
+    // Capture on page load
+    setTimeout(captureCanvasSnapshots, 1000);
+    
+    // Capture periodically (every 3 seconds) to catch any updates
+    setInterval(captureCanvasSnapshots, 3000);
+    
+    // Capture on user interactions
+    ['click', 'scroll', 'mousemove'].forEach(event => {
+        let timeout;
+        document.addEventListener(event, () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(captureCanvasSnapshots, 500);
+        }, { passive: true });
+    });
 }
 
 // Initialize the gallery when DOM is loaded

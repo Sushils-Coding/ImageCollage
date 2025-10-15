@@ -35,6 +35,18 @@ function loadImages() {
         const canvas = document.createElement('canvas');
         canvas.className = 'collage-canvas';
         
+        // Create hidden img tag for Clarity tracking
+        const hiddenImg = document.createElement('img');
+        hiddenImg.src = imageName;
+        hiddenImg.alt = createImageTitle(imageName);
+        hiddenImg.className = 'clarity-tracking-img';
+        hiddenImg.style.position = 'absolute';
+        hiddenImg.style.opacity = '0.01'; // Nearly invisible but trackable by Clarity
+        hiddenImg.style.pointerEvents = 'none';
+        hiddenImg.style.width = '100%';
+        hiddenImg.style.height = '100%';
+        hiddenImg.style.objectFit = 'cover';
+        
         // Load image and draw on canvas
         const img = new Image();
         img.src = imageName;
@@ -85,6 +97,7 @@ function loadImages() {
         overlay.innerHTML = `<h3>${createImageTitle(imageName)}</h3>`;
         
         collageItem.appendChild(canvas);
+        collageItem.appendChild(hiddenImg); // Add hidden img for Clarity
         collageItem.appendChild(overlay);
         
         // Add click event to open lightbox
@@ -99,10 +112,14 @@ function openLightbox(index) {
     currentImageIndex = index;
     const lightbox = document.getElementById('lightbox');
     const lightboxCanvas = document.getElementById('lightbox-canvas');
+    const lightboxImg = document.getElementById('lightbox-img');
     const caption = document.getElementById('caption');
     
     lightbox.style.display = 'block';
     caption.textContent = createImageTitle(images[index]);
+    
+    // Set hidden img for Clarity tracking
+    lightboxImg.src = images[index];
     
     // Load image and draw on lightbox canvas
     const img = new Image();
@@ -160,12 +177,16 @@ function nextImage() {
 // Function to update lightbox image
 function updateLightboxImage() {
     const lightboxCanvas = document.getElementById('lightbox-canvas');
+    const lightboxImg = document.getElementById('lightbox-img');
     const caption = document.getElementById('caption');
     
     lightboxCanvas.style.opacity = '0';
     
     setTimeout(() => {
         caption.textContent = createImageTitle(images[currentImageIndex]);
+        
+        // Update hidden img for Clarity tracking
+        lightboxImg.src = images[currentImageIndex];
         
         // Load new image and draw on canvas
         const img = new Image();

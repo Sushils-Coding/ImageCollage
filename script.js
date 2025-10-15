@@ -31,32 +31,33 @@ function loadImages() {
         const collageItem = document.createElement('div');
         collageItem.className = 'collage-item';
         
-        // Create canvas element
+        // Create regular img tag (base layer for Clarity)
+        const img = document.createElement('img');
+        img.src = imageName;
+        img.alt = createImageTitle(imageName);
+        img.className = 'collage-img';
+        img.loading = 'lazy';
+        
+        // Add error handling for images
+        img.onerror = function() {
+            console.error(`Failed to load image: ${imageName}`);
+            this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="20" dy=".3em"%3EImage not found%3C/text%3E%3C/svg%3E';
+        };
+        
+        // Create canvas element overlay
         const canvas = document.createElement('canvas');
         canvas.className = 'collage-canvas';
         
-        // Create hidden img tag for Clarity tracking
-        const hiddenImg = document.createElement('img');
-        hiddenImg.src = imageName;
-        hiddenImg.alt = createImageTitle(imageName);
-        hiddenImg.className = 'clarity-tracking-img';
-        hiddenImg.style.position = 'absolute';
-        hiddenImg.style.opacity = '0.01'; // Nearly invisible but trackable by Clarity
-        hiddenImg.style.pointerEvents = 'none';
-        hiddenImg.style.width = '100%';
-        hiddenImg.style.height = '100%';
-        hiddenImg.style.objectFit = 'cover';
-        
         // Load image and draw on canvas
-        const img = new Image();
-        img.src = imageName;
+        const tempImg = new Image();
+        tempImg.src = imageName;
         
-        img.onload = function() {
+        tempImg.onload = function() {
             // Set canvas size to match image aspect ratio
             const maxWidth = 600;
             const maxHeight = 400;
-            let width = img.width;
-            let height = img.height;
+            let width = tempImg.width;
+            let height = tempImg.height;
             
             // Calculate aspect ratio
             const aspectRatio = width / height;
@@ -75,29 +76,15 @@ function loadImages() {
             canvas.height = height;
             
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-        };
-        
-        // Add error handling for images
-        img.onerror = function() {
-            console.error(`Failed to load image: ${imageName}`);
-            canvas.width = 400;
-            canvas.height = 300;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ddd';
-            ctx.fillRect(0, 0, 400, 300);
-            ctx.fillStyle = '#999';
-            ctx.font = '20px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('Image not found', 200, 150);
+            ctx.drawImage(tempImg, 0, 0, width, height);
         };
         
         const overlay = document.createElement('div');
         overlay.className = 'image-overlay';
         overlay.innerHTML = `<h3>${createImageTitle(imageName)}</h3>`;
         
-        collageItem.appendChild(canvas);
-        collageItem.appendChild(hiddenImg); // Add hidden img for Clarity
+        collageItem.appendChild(img); // Base img for Clarity
+        collageItem.appendChild(canvas); // Canvas overlay
         collageItem.appendChild(overlay);
         
         // Add click event to open lightbox
@@ -111,45 +98,12 @@ function loadImages() {
 function openLightbox(index) {
     currentImageIndex = index;
     const lightbox = document.getElementById('lightbox');
-    const lightboxCanvas = document.getElementById('lightbox-canvas');
     const lightboxImg = document.getElementById('lightbox-img');
     const caption = document.getElementById('caption');
     
     lightbox.style.display = 'block';
-    caption.textContent = createImageTitle(images[index]);
-    
-    // Set hidden img for Clarity tracking
     lightboxImg.src = images[index];
-    
-    // Load image and draw on lightbox canvas
-    const img = new Image();
-    img.src = images[index];
-    
-    img.onload = function() {
-        // Calculate dimensions to fit screen while maintaining aspect ratio
-        const maxWidth = window.innerWidth * 0.9;
-        const maxHeight = window.innerHeight * 0.8;
-        let width = img.width;
-        let height = img.height;
-        
-        const aspectRatio = width / height;
-        
-        if (width > maxWidth) {
-            width = maxWidth;
-            height = width / aspectRatio;
-        }
-        
-        if (height > maxHeight) {
-            height = maxHeight;
-            width = height * aspectRatio;
-        }
-        
-        lightboxCanvas.width = width;
-        lightboxCanvas.height = height;
-        
-        const ctx = lightboxCanvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-    };
+    caption.textContent = createImageTitle(images[index]);
     
     // Prevent body scroll when lightbox is open
     document.body.style.overflow = 'hidden';
@@ -176,49 +130,15 @@ function nextImage() {
 
 // Function to update lightbox image
 function updateLightboxImage() {
-    const lightboxCanvas = document.getElementById('lightbox-canvas');
     const lightboxImg = document.getElementById('lightbox-img');
     const caption = document.getElementById('caption');
     
-    lightboxCanvas.style.opacity = '0';
+    lightboxImg.style.opacity = '0';
     
     setTimeout(() => {
-        caption.textContent = createImageTitle(images[currentImageIndex]);
-        
-        // Update hidden img for Clarity tracking
         lightboxImg.src = images[currentImageIndex];
-        
-        // Load new image and draw on canvas
-        const img = new Image();
-        img.src = images[currentImageIndex];
-        
-        img.onload = function() {
-            // Calculate dimensions to fit screen while maintaining aspect ratio
-            const maxWidth = window.innerWidth * 0.9;
-            const maxHeight = window.innerHeight * 0.8;
-            let width = img.width;
-            let height = img.height;
-            
-            const aspectRatio = width / height;
-            
-            if (width > maxWidth) {
-                width = maxWidth;
-                height = width / aspectRatio;
-            }
-            
-            if (height > maxHeight) {
-                height = maxHeight;
-                width = height * aspectRatio;
-            }
-            
-            lightboxCanvas.width = width;
-            lightboxCanvas.height = height;
-            
-            const ctx = lightboxCanvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            lightboxCanvas.style.opacity = '1';
-        };
+        caption.textContent = createImageTitle(images[currentImageIndex]);
+        lightboxImg.style.opacity = '1';
     }, 150);
 }
 

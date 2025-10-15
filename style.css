@@ -60,11 +60,21 @@ header p {
 .collage-item:nth-child(7) { animation-delay: 0.7s; }
 .collage-item:nth-child(8) { animation-delay: 0.8s; }
 
-.collage-item canvas {
+.collage-item img.collage-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+.collage-item canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none; /* Hide canvas, use img tags for Clarity visibility */
 }
 
 .image-overlay {

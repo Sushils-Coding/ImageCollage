@@ -31,22 +31,60 @@ function loadImages() {
         const collageItem = document.createElement('div');
         collageItem.className = 'collage-item';
         
-        const img = document.createElement('img');
+        // Create canvas element
+        const canvas = document.createElement('canvas');
+        canvas.className = 'collage-canvas';
+        
+        // Load image and draw on canvas
+        const img = new Image();
         img.src = imageName;
-        img.alt = createImageTitle(imageName);
-        img.loading = 'lazy';
+        
+        img.onload = function() {
+            // Set canvas size to match image aspect ratio
+            const maxWidth = 600;
+            const maxHeight = 400;
+            let width = img.width;
+            let height = img.height;
+            
+            // Calculate aspect ratio
+            const aspectRatio = width / height;
+            
+            if (width > maxWidth) {
+                width = maxWidth;
+                height = width / aspectRatio;
+            }
+            
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+        };
         
         // Add error handling for images
         img.onerror = function() {
             console.error(`Failed to load image: ${imageName}`);
-            this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23ddd" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%23999" font-size="20" dy=".3em"%3EImage not found%3C/text%3E%3C/svg%3E';
+            canvas.width = 400;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ddd';
+            ctx.fillRect(0, 0, 400, 300);
+            ctx.fillStyle = '#999';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Image not found', 200, 150);
         };
         
         const overlay = document.createElement('div');
         overlay.className = 'image-overlay';
         overlay.innerHTML = `<h3>${createImageTitle(imageName)}</h3>`;
         
-        collageItem.appendChild(img);
+        collageItem.appendChild(canvas);
         collageItem.appendChild(overlay);
         
         // Add click event to open lightbox
@@ -60,12 +98,41 @@ function loadImages() {
 function openLightbox(index) {
     currentImageIndex = index;
     const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxCanvas = document.getElementById('lightbox-canvas');
     const caption = document.getElementById('caption');
     
     lightbox.style.display = 'block';
-    lightboxImg.src = images[index];
     caption.textContent = createImageTitle(images[index]);
+    
+    // Load image and draw on lightbox canvas
+    const img = new Image();
+    img.src = images[index];
+    
+    img.onload = function() {
+        // Calculate dimensions to fit screen while maintaining aspect ratio
+        const maxWidth = window.innerWidth * 0.9;
+        const maxHeight = window.innerHeight * 0.8;
+        let width = img.width;
+        let height = img.height;
+        
+        const aspectRatio = width / height;
+        
+        if (width > maxWidth) {
+            width = maxWidth;
+            height = width / aspectRatio;
+        }
+        
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * aspectRatio;
+        }
+        
+        lightboxCanvas.width = width;
+        lightboxCanvas.height = height;
+        
+        const ctx = lightboxCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+    };
     
     // Prevent body scroll when lightbox is open
     document.body.style.overflow = 'hidden';
@@ -92,15 +159,45 @@ function nextImage() {
 
 // Function to update lightbox image
 function updateLightboxImage() {
-    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxCanvas = document.getElementById('lightbox-canvas');
     const caption = document.getElementById('caption');
     
-    lightboxImg.style.opacity = '0';
+    lightboxCanvas.style.opacity = '0';
     
     setTimeout(() => {
-        lightboxImg.src = images[currentImageIndex];
         caption.textContent = createImageTitle(images[currentImageIndex]);
-        lightboxImg.style.opacity = '1';
+        
+        // Load new image and draw on canvas
+        const img = new Image();
+        img.src = images[currentImageIndex];
+        
+        img.onload = function() {
+            // Calculate dimensions to fit screen while maintaining aspect ratio
+            const maxWidth = window.innerWidth * 0.9;
+            const maxHeight = window.innerHeight * 0.8;
+            let width = img.width;
+            let height = img.height;
+            
+            const aspectRatio = width / height;
+            
+            if (width > maxWidth) {
+                width = maxWidth;
+                height = width / aspectRatio;
+            }
+            
+            if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+            
+            lightboxCanvas.width = width;
+            lightboxCanvas.height = height;
+            
+            const ctx = lightboxCanvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            lightboxCanvas.style.opacity = '1';
+        };
     }, 150);
 }
 

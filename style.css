@@ -60,7 +60,7 @@ header p {
 .collage-item:nth-child(7) { animation-delay: 0.7s; }
 .collage-item:nth-child(8) { animation-delay: 0.8s; }
 
-.collage-item img {
+.collage-item canvas {
     width: 100%;
     height: 100%;
     object-fit: cover;

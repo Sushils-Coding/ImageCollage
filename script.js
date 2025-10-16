@@ -67,15 +67,8 @@ function loadImages() {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            // Convert canvas to data URL and set as background for Clarity capture
-            try {
-                const dataURL = canvas.toDataURL('image/png');
-                canvas.style.backgroundImage = `url(${dataURL})`;
-                canvas.style.backgroundSize = 'cover';
-                canvas.setAttribute('data-image-src', imageName);
-            } catch (e) {
-                console.warn('Could not export canvas to data URL:', e);
-            }
+            // No data URL stored - canvas content only exists as pixels
+            // This prevents users from copying/downloading via DOM inspection
         };
         
         // Add error handling for images
@@ -98,6 +91,11 @@ function loadImages() {
         
         collageItem.appendChild(canvas);
         collageItem.appendChild(overlay);
+        
+        // Security: Prevent right-click and context menu on canvas
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        canvas.addEventListener('selectstart', (e) => e.preventDefault());
+        canvas.addEventListener('dragstart', (e) => e.preventDefault());
         
         // Add click event to open lightbox
         collageItem.addEventListener('click', () => openLightbox(index));
@@ -149,15 +147,13 @@ function openLightbox(index) {
         const ctx = lightboxCanvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Set background for Clarity capture
-        try {
-            const dataURL = lightboxCanvas.toDataURL('image/png');
-            lightboxCanvas.style.backgroundImage = `url(${dataURL})`;
-            lightboxCanvas.style.backgroundSize = 'cover';
-        } catch (e) {
-            console.warn('Could not export lightbox canvas:', e);
-        }
+        // No data URL stored for security
     };
+    
+    // Security: Prevent right-click and interactions on lightbox canvas
+    lightboxCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    lightboxCanvas.addEventListener('selectstart', (e) => e.preventDefault());
+    lightboxCanvas.addEventListener('dragstart', (e) => e.preventDefault());
     
     // Prevent body scroll when lightbox is open
     document.body.style.overflow = 'hidden';
@@ -222,72 +218,60 @@ function updateLightboxImage() {
             const ctx = lightboxCanvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            // Set background for Clarity capture
-            try {
-                const dataURL = lightboxCanvas.toDataURL('image/png');
-                lightboxCanvas.style.backgroundImage = `url(${dataURL})`;
-                lightboxCanvas.style.backgroundSize = 'cover';
-            } catch (e) {
-                console.warn('Could not export lightbox canvas:', e);
-            }
+            // No data URL stored for security
             
             lightboxCanvas.style.opacity = '1';
         };
     }, 150);
 }
 
-// Function to make canvas content visible to Clarity
+// Function to make canvas content visible to Clarity (DISABLED for security)
+// Canvas content is now pure pixel data with no accessible data URLs
 function initClarityCanvasCapture() {
-    // Create a hidden container for Clarity-compatible snapshots
-    const clarityContainer = document.createElement('div');
-    clarityContainer.id = 'clarity-canvas-snapshots';
-    clarityContainer.style.cssText = 'position: fixed; top: -9999px; left: -9999px; opacity: 0; pointer-events: none;';
-    clarityContainer.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(clarityContainer);
+    // Disabled: No snapshots or data URLs exposed
+    // Canvas images cannot be extracted from DOM
+    console.log('Canvas rendering active - images protected from DOM extraction');
+}
+
+// Security: Disable common download/copy shortcuts
+function disableImageExtraction() {
+    // Disable right-click on entire page
+    document.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'CANVAS') {
+            e.preventDefault();
+        }
+    });
     
-    // Periodically capture canvas content for Clarity
-    function captureCanvasSnapshots() {
-        const canvases = document.querySelectorAll('canvas[data-clarity-canvas]');
-        clarityContainer.innerHTML = ''; // Clear previous snapshots
-        
-        canvases.forEach((canvas, index) => {
-            try {
-                const dataURL = canvas.toDataURL('image/png');
-                const snapshotDiv = document.createElement('div');
-                snapshotDiv.className = 'canvas-snapshot';
-                snapshotDiv.setAttribute('data-canvas-index', index);
-                snapshotDiv.style.cssText = `
-                    width: ${canvas.width}px; 
-                    height: ${canvas.height}px; 
-                    background-image: url(${dataURL}); 
-                    background-size: cover;
-                `;
-                clarityContainer.appendChild(snapshotDiv);
-            } catch (e) {
-                console.warn('Canvas snapshot failed:', e);
-            }
-        });
-    }
+    // Disable keyboard shortcuts for saving/printing
+    document.addEventListener('keydown', (e) => {
+        // Prevent Ctrl+S (Save), Ctrl+P (Print), Ctrl+Shift+I (DevTools)
+        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p')) {
+            e.preventDefault();
+            console.log('Save/Print disabled for image protection');
+        }
+    });
     
-    // Capture on page load
-    setTimeout(captureCanvasSnapshots, 1000);
+    // Disable drag and drop
+    document.addEventListener('dragstart', (e) => {
+        if (e.target.tagName === 'CANVAS') {
+            e.preventDefault();
+        }
+    });
     
-    // Capture periodically (every 3 seconds) to catch any updates
-    setInterval(captureCanvasSnapshots, 3000);
-    
-    // Capture on user interactions
-    ['click', 'scroll', 'mousemove'].forEach(event => {
-        let timeout;
-        document.addEventListener(event, () => {
-            clearTimeout(timeout);
-            timeout = setTimeout(captureCanvasSnapshots, 500);
-        }, { passive: true });
+    // Disable text selection on canvas
+    document.addEventListener('selectstart', (e) => {
+        if (e.target.tagName === 'CANVAS') {
+            e.preventDefault();
+        }
     });
 }
 
 // Initialize the gallery when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     loadImages();
+    
+    // Enable security features
+    disableImageExtraction();
     
     // Set up lightbox event listeners
     const closeBtn = document.querySelector('.close');

@@ -65,8 +65,11 @@ header p {
     height: 100%;
     object-fit: cover;
     display: block;
-    background-size: cover;
-    background-position: center;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: auto;
 }
 
 .image-overlay {
@@ -109,6 +112,10 @@ header p {
     transform: translate(-50%, -50%);
     border-radius: 10px;
     box-shadow: 0 0 50px rgba(255, 255, 255, 0.2);
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 .close {
